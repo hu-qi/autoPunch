@@ -1,0 +1,28 @@
+{
+  "name": "auto-punch-serverless",
+  "version": "1.0.0",
+  "description": "Serverless function for automatic clock-in/out",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test-local.js",
+    "test:env": "node test-env.js",
+    "test:feishu": "node test-feishu.js",
+    "test:zhipu": "node test-zhipu.js"
+  },
+  "dependencies": {
+    "axios": "^1.6.0",
+    "dotenv": "^16.0.0"
+  },
+  "keywords": [
+    "serverless",
+    "automation",
+    "clock-in"
+  ],
+  "author": "AutoPunch",
+  "license": "GPL-3.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/auto-punch-serverless.git"
+  }
+}

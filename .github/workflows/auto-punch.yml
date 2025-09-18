@@ -1,0 +1,35 @@
+name: Auto Punch Card
+
+on:
+  schedule:
+    # 工作日上午7:05执行（上班卡）
+    - cron: '5 23 * * 0-4'
+    # 工作日下午18:05执行（下班卡）
+    - cron: '5 10 * * 1-5'
+  workflow_dispatch: # 允许手动触发
+
+jobs:
+  punch:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '16'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: npm install
+    
+    - name: Punch Card
+      run: node index.js
+      env:
+        PUNCH_URL: ${{ secrets.PUNCH_URL }}
+        PUNCH_TOKEN: ${{ secrets.PUNCH_TOKEN }}
+        APP_VERSION_NUMBER: ${{ secrets.APP_VERSION_NUMBER }}
+        FEISHU_BOT_WEBHOOK: ${{ secrets.FEISHU_BOT_WEBHOOK }}
+        ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
