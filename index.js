@@ -16,12 +16,15 @@ async function isWorkday(date) {
   const dateStr = `${year}-${month}-${day}`;
   
   console.log(`检查日期 ${dateStr} 是否为工作日`);
-  
+
   try {
     // 使用公共API查询节假日信息
-    const response = await axios.get(`${HOLIDAY_API}${dateStr}`);
+    const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36'
+    }
+    const response = await axios.get(`${HOLIDAY_API}${dateStr}`, { headers: headers });
     const data = response.data;
-    
+    console.log('data', data)
     console.log(`节假日API返回数据:`, JSON.stringify(data, null, 2));
     
     // 如果是工作日返回true，节假日或调休返回false
