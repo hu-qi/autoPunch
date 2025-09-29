@@ -1,4 +1,5 @@
 const axios = require('axios');
+const https = require('https');
 
 // 中国节假日API（使用公共API）
 const HOLIDAY_API = 'http://timor.tech/api/holiday/info/';
@@ -62,8 +63,8 @@ function getPunchCardType(date) {
   
   console.log(`当前时间: ${hour}:${minute}`);
   
-  // 上班卡时间：7:00-8:00
-  if (hour === 7) {
+  // 上班卡时间：6:30-8:00
+  if ((hour === 6 && minute >= 30) || hour === 7 || (hour === 8 && minute === 0)) {
     console.log('在上班打卡时间范围内');
     return "ONCLOCK";
   }
@@ -267,8 +268,14 @@ async function punchCard() {
   try {
     console.log(`开始执行${punchCardType === 'ONCLOCK' ? '上班' : '下班'}打卡`);
     
-    // 发送打卡请求
-    const response = await axios.post(url, data, { headers });
+    // 发送打卡请求（可选忽略 TLS 校验，仅用于私有证书场景）
+    const allowInsecure = String(process.env.ALLOW_INSECURE_TLS || '').toLowerCase() === 'true';
+    const axiosOptions = { headers };
+    if (allowInsecure) {
+      console.warn('警告: 已启用 ALLOW_INSECURE_TLS，打卡请求将忽略 TLS 证书校验');
+      axiosOptions.httpsAgent = new https.Agent({ rejectUnauthorized: false });
+    }
+    const response = await axios.post(url, data, axiosOptions);
     
     if (response.status === 200) {
       console.log('打卡成功:', response.data);
