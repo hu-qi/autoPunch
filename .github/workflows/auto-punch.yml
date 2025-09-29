@@ -12,6 +12,7 @@ jobs:
   punch:
     runs-on: ubuntu-latest
     env:
+      TZ: Asia/Shanghai
       PUNCH_URL: ${{ secrets.PUNCH_URL }}
       PUNCH_TOKEN: ${{ secrets.PUNCH_TOKEN }}
       APP_VERSION_NUMBER: ${{ secrets.APP_VERSION_NUMBER }}
@@ -31,6 +32,11 @@ jobs:
     - name: Install dependencies
       run: npm install
     
+    - name: Check local time
+      run: |
+        date
+        node -e "console.log('Node local time:', new Date().toString())"
+
     - name: Debug env presence
       run: |
         node -e "console.log('Has PUNCH_TOKEN:', !!process.env.PUNCH_TOKEN)"
