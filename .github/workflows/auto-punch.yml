@@ -2,10 +2,10 @@ name: Auto Punch Card
 
 on:
   schedule:
-    # 工作日上午7:05执行（上班卡）
-    - cron: '5 23 * * 0-4'
-    # 工作日下午18:05执行（下班卡）
-    - cron: '5 10 * * 1-5'
+    # 工作日上午6:30触发（窗口内随机延迟后执行）
+    - cron: '30 22 * * 1-5'
+    # 工作日下午18:00触发（窗口内随机延迟后执行）
+    - cron: '0 10 * * 1-5'
   workflow_dispatch: # 允许手动触发
 
 jobs:
@@ -31,19 +31,46 @@ jobs:
     
     - name: Install dependencies
       run: npm install
-    
+
+    - name: Random delay within window (06:30–08:00, 18:00–22:00)
+      shell: bash
+      run: |
+        # 计算当天秒数
+        H=$(date +%H)
+        M=$(date +%M)
+        S=$(date +%S)
+        SECS=$((H*3600 + M*60 + S))
+
+        # 设定时间窗口（上海时间）
+        M_START=$((6*3600 + 30*60))   # 06:30
+        M_END=$((8*3600))             # 08:00
+        E_START=$((18*3600))          # 18:00
+        E_END=$((22*3600))            # 22:00
+
+        # 根据当前所在窗口计算最大延迟，确保不超窗
+        if [ "$SECS" -ge "$M_START" ] && [ "$SECS" -lt "$M_END" ]; then
+          MAX=$((M_END - SECS))
+          WINDOW="06:30–08:00"
+        elif [ "$SECS" -ge "$E_START" ] && [ "$SECS" -lt "$E_END" ]; then
+          MAX=$((E_END - SECS))
+          WINDOW="18:00–22:00"
+        else
+          MAX=0
+          WINDOW="outside-defined-windows"
+        fi
+
+        if [ "$MAX" -gt 0 ]; then
+          JITTER=$((RANDOM % MAX))   # 0..MAX-1 秒
+          echo "In window $WINDOW, sleeping $JITTER seconds (max $MAX)."
+          sleep "$JITTER"
+        else
+          echo "Not in a defined window, skipping delay."
+        fi
+
     - name: Check local time
       run: |
         date
         node -e "console.log('Node local time:', new Date().toString())"
 
-    - name: Debug env presence
-      run: |
-        node -e "console.log('Has PUNCH_TOKEN:', !!process.env.PUNCH_TOKEN)"
-        node -e "console.log('Has PUNCH_URL:', !!process.env.PUNCH_URL)"
-        node -e "console.log('Has APP_VERSION_NUMBER:', !!process.env.APP_VERSION_NUMBER)"
-        node -e "console.log('Has FEISHU_BOT_WEBHOOK:', !!process.env.FEISHU_BOT_WEBHOOK)"
-        node -e "console.log('Has ZHIPU_API_KEY:', !!process.env.ZHIPU_API_KEY)"
-    
     - name: Punch Card
       run: node index.js
