@@ -24,6 +24,8 @@
 | APP_VERSION_NUMBER | 应用版本号 | 3 |
 | FEISHU_BOT_WEBHOOK | 飞书机器人Webhook (可选) | 无 |
 | ZHIPU_API_KEY | 智谱AI API Key (可选) | 无 |
+| ALLOW_INSECURE_TLS | 跳过 TLS 证书校验（仅私有/测试环境） | false |
+| CUSTOM_CA_CERT_PATH | 自定义 CA 证书路径（优先于不安全模式） | 无 |
 
 ## GitHub Actions 配置
 
@@ -61,6 +63,17 @@
 3. 将 API Key 添加到 GitHub Secrets 中，变量名为 `ZHIPU_API_KEY`
 4. 打卡消息将使用 LLM 生成更加温馨和有情绪价值的内容
 
+## TLS 证书问题处理
+
+- 错误 `unable to verify the first certificate` 多为服务器证书链不完整或使用了私有 CA。
+- 优先方案：配置 `CUSTOM_CA_CERT_PATH` 指向可信的 CA 证书文件（例如 `ca.crt`）。代码会使用该 CA 验证 TLS。
+- 临时方案：设置 `ALLOW_INSECURE_TLS=true`，将忽略 TLS 证书校验，仅建议在受控测试环境使用。
+- 诊断命令：
+  - `curl -v https://gp.stonghr.cn/` 查看证书链与握手情况
+  - `openssl s_client -connect gp.stonghr.cn:443 -showcerts` 导出与检查证书
+
+> 提示：即使解决 TLS 问题，若 Token 无效，接口可能返回类似 `{"code":1000,"msg":"身份验证失败"}`。请确认 `authentication` 头与 `appversionnumber` 值正确。
+
 ## 本地测试
 
 1. 克隆项目:
@@ -74,13 +87,16 @@
    ```
 
 3. 配置环境变量:
-   ```bash
-   export PUNCH_TOKEN="your_token_here"
-   export PUNCH_URL="https://example.com/api/attendance/app/attendance/punchCard"
-   export APP_VERSION_NUMBER="3"
-   export FEISHU_BOT_WEBHOOK="your_feishu_webhook_here" # 可选
-   export ZHIPU_API_KEY="your_zhipu_api_key_here" # 可选
-   ```
+  ```bash
+  export PUNCH_TOKEN="your_token_here"
+  export PUNCH_URL="https://example.com/api/attendance/app/attendance/punchCard"
+  export APP_VERSION_NUMBER="3"
+  export FEISHU_BOT_WEBHOOK="your_feishu_webhook_here" # 可选
+  export ZHIPU_API_KEY="your_zhipu_api_key_here" # 可选
+  # TLS 相关（二选一或均不配置）
+  export CUSTOM_CA_CERT_PATH="/absolute/path/to/ca.crt"  # 推荐
+  export ALLOW_INSECURE_TLS="false"                      # 如需跳过 TLS，设为 true
+  ```
 
 4. 运行程序:
    ```bash

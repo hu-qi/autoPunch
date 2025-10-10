@@ -1,5 +1,6 @@
 const axios = require('axios');
 const https = require('https');
+const fs = require('fs');
 
 // 中国节假日API（使用公共API）
 const HOLIDAY_API = 'http://timor.tech/api/holiday/info/';
@@ -63,16 +64,16 @@ function getPunchCardType(date) {
   
   console.log(`当前时间: ${hour}:${minute}`);
   
-  // 上班卡时间：6:30-8:00
-  if ((hour === 6 && minute >= 30) || hour === 7 || (hour === 8 && minute === 0)) {
+  // 上班卡时间：6:30-8:10
+  if ((hour === 6 && minute >= 30) || hour === 7 || (hour === 8 && minute < 10 )) {
     console.log('在上班打卡时间范围内');
-    return "ONCLOCK";
+    return "OFFICECLOCK";
   }
   
   // 下班卡时间：18:00-22:00
   if (hour >= 18 && hour < 22) {
     console.log('在下班打卡时间范围内');
-    return "OFFCLOCK";
+    return "OFFICECLOCK";
   }
   
   console.log('不在打卡时间范围内');
@@ -268,10 +269,26 @@ async function punchCard() {
   try {
     console.log(`开始执行${punchCardType === 'ONCLOCK' ? '上班' : '下班'}打卡`);
     
-    // 发送打卡请求（可选忽略 TLS 校验，仅用于私有证书场景）
+    // 发送打卡请求（TLS 配置：优先使用自定义 CA，其次才允许不安全模式）
     const allowInsecure = String(process.env.ALLOW_INSECURE_TLS || '').toLowerCase() === 'true';
+    const customCaPath = process.env.CUSTOM_CA_CERT_PATH;
+    console.log('TLS 配置环境变量:', { ALLOW_INSECURE_TLS: allowInsecure, CUSTOM_CA_CERT_PATH: customCaPath || null });
     const axiosOptions = { headers };
-    if (allowInsecure) {
+    if (customCaPath) {
+      try {
+        const caCert = fs.readFileSync(customCaPath);
+        axiosOptions.httpsAgent = new https.Agent({ ca: caCert, rejectUnauthorized: true });
+        console.log('使用自定义 CA 证书进行 TLS 校验:', customCaPath);
+      } catch (e) {
+        console.warn('加载自定义 CA 证书失败，路径:', customCaPath, '错误:', e.message);
+        if (allowInsecure) {
+          console.warn('警告: 回退到不安全模式 ALLOW_INSECURE_TLS，忽略 TLS 证书校验');
+          axiosOptions.httpsAgent = new https.Agent({ rejectUnauthorized: false });
+        } else {
+          throw new Error(`自定义 CA 加载失败且未启用不安全模式: ${e.message}`);
+        }
+      }
+    } else if (allowInsecure) {
       console.warn('警告: 已启用 ALLOW_INSECURE_TLS，打卡请求将忽略 TLS 证书校验');
       axiosOptions.httpsAgent = new https.Agent({ rejectUnauthorized: false });
     }
